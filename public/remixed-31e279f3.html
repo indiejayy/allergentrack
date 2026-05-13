@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AllerScan — Barcode Allergen Scanner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #07090f;
+    --surface: #0d1220;
+    --surface2: #141b2e;
+    --surface3: #1a2338;
+    --text: #e8eeff;
+    --text-muted: #6a7a9a;
+    --text-dim: #3a4560;
+    --border: rgba(255,255,255,0.07);
+    --border-bright: rgba(255,255,255,0.15);
+    --red: #ff3b52;
+    --red-bg: rgba(255, 59, 82, 0.1);
+    --red-border: rgba(255, 59, 82, 0.25);
+    --amber: #ffaa33;
+    --amber-bg: rgba(255, 170, 51, 0.1);
+    --amber-border: rgba(255, 170, 51, 0.25);
+    --green: #00d97a;
+    --green-bg: rgba(0, 217, 122, 0.08);
+    --green-border: rgba(0, 217, 122, 0.25);
+    --accent: #4d7eff;
+  }
+
+  html, body {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(77,126,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(77,126,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page { position: relative; z-index: 1; width: 100%; max-width: 520px; padding: 0 20px 60px; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 40px 0 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 38px; height: 38px;
+    border: 1px solid var(--red);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--red);
+  }
+
+  .logo-icon svg { width: 20px; height: 20px; }
+
+  .logo-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.06em;
+    color: var(--text);
+  }
+
+  .logo-name span { color: var(--red); }
+
+  .tagline {
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+    padding-left: 2px;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, var(--red) 0%, transparent 60%);
+    margin-bottom: 28px;
+    opacity: 0.4;
+  }
+
+  /* ── HOME SCREEN ── */
+  #screen-home { animation: fadeUp 0.5s ease both 0.1s; }
+
+  .scan-btn {
+    width: 100%;
+    padding: 18px;
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    border-radius: 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    letter-spacing: 0.01em;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scan-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,59,82,0.08) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .scan-btn:hover::before { opacity: 1; }
+  .scan-btn:hover { border-color: rgba(255,59,82,0.4); transform: translateY(-1px); }
+  .scan-btn:active { transform: translateY(0) scale(0.99); }
+
+  .scan-btn svg { flex-shrink: 0; }
+
+  .scan-btn .pulse-dot {
+    width: 8px; height: 8px;
+    background: var(--red);
+    border-radius: 50%;
+    animation: pulse 1.8s ease infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  /* Manual input */
+  .manual-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+
+  .manual-card label {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .input-row { display: flex; gap: 8px; }
+
+  input[type="text"] {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus { border-color: var(--border-bright); }
+  input[type="text"]::placeholder { color: var(--text-dim); }
+
+  .go-btn {
+    width: 44px; height: 44px;
+    background: var(--red);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: opacity 0.2s, transform 0.15s;
+  }
+
+  .go-btn:hover { opacity: 0.85; }
+  .go-btn:active { transform: scale(0.95); }
+  .go-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .go-btn svg { color: #fff; }
+
+  .hint {
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .hint a {
+    color: var(--text-muted);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* ── NOTICE BOX ── */
+  .notice {
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+
+  .notice.warn {
+    background: var(--amber-bg);
+    border: 1px solid var(--amber-border);
+    color: var(--amber);
+  }
+
+  .notice.err {
+    background: var(--red-bg);
+    border: 1px solid var(--red-border);
+    color: var(--red);
+  }
+
+  /* ── SCANNER ── */
+  #screen-scan { animation: fadeUp 0.3s ease both; }
+
+  .viewfinder {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000;
+  }
+
+  #video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .vf-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(7, 9, 15, 0.5);
+    /* cut-out mask */
+    -webkit-mask: url(#cutout);
+    mask-composite: exclude;
+  }
+
+  .vf-frame {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  /* Corner brackets */
+  .bracket {
+    position: absolute;
+    width: 28px; height: 28px;
+  }
+
+  .bracket::before, .bracket::after {
+    content: '';
+    position: absolute;
+    background: var(--red);
+  }
+
+  .bracket::before { width: 100%; height: 2px; top: 0; }
+  .bracket::after { width: 2px; height: 100%; top: 0; }
+
+  .bracket.tl { top: 20px; left: 20px; }
+  .bracket.tl::before { left: 0; }
+  .bracket.tl::after { left: 0; }
+
+  .bracket.tr { top: 20px; right: 20px; transform: scaleX(-1); }
+  .bracket.tr::before { right: 0; }
+  .bracket.tr::after { right: 0; }
+
+  .bracket.bl { bottom: 20px; left: 20px; transform: scaleY(-1); }
+  .bracket.br { bottom: 20px; right: 20px; transform: scale(-1,-1); }
+
+  /* Scan line */
+  .scan-line {
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent, var(--red) 20%, var(--red) 80%, transparent);
+    box-shadow: 0 0 8px var(--red);
+    animation: scanline 2.2s cubic-bezier(0.45,0,0.55,1) infinite;
+  }
+
+  @keyframes scanline {
+    0%, 100% { top: 18%; opacity: 1; }
+    48%, 52% { opacity: 0.6; }
+    50% { top: 82%; opacity: 1; }
+  }
+
+  .vf-label {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 36px 16px 16px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 400;
+    color: rgba(232, 238, 255, 0.7);
+    background: linear-gradient(transparent, rgba(7,9,15,0.8));
+  }
+
+  .cancel-btn {
+    margin-top: 14px;
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .cancel-btn:hover { border-color: var(--border-bright); color: var(--text); }
+
+  /* ── LOADING ── */
+  #screen-loading { animation: fadeUp 0.3s ease both; text-align: center; padding: 40px 0; }
+
+  .spinner {
+    width: 40px; height: 40px;
+    border: 2px solid var(--border);
+    border-top-color: var(--red);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 20px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #loading-barcode {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── RESULTS ── */
+  #screen-result { animation: fadeUp 0.4s ease both; }
+
+  .product-hero {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .product-img {
+    width: 70px; height: 70px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+    flex-shrink: 0;
+  }
+
+  .product-img-placeholder {
+    width: 70px; height: 70px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    color: var(--text-dim);
+  }
+
+  .product-info { flex: 1; min-width: 0; }
+
+  .product-name {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 3px;
+  }
+
+  .product-brand {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .barcode-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+  }
+
+  /* Section label */
+  .section-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin: 20px 0 10px;
+  }
+
+  /* Allergen rows */
+  .allergen-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--red-bg);
+    border: 1px solid var(--red-border);
+    border-radius: 12px;
+    padding: 13px 16px;
+    margin-bottom: 8px;
+    animation: slideIn 0.3s ease both;
+  }
+
+  .allergen-row:nth-child(1) { animation-delay: 0.05s; }
+  .allergen-row:nth-child(2) { animation-delay: 0.1s; }
+  .allergen-row:nth-child(3) { animation-delay: 0.15s; }
+  .allergen-row:nth-child(4) { animation-delay: 0.2s; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .allergen-emoji { font-size: 22px; line-height: 1; flex-shrink: 0; }
+
+  .allergen-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--red);
+  }
+
+  /* Traces */
+  .traces-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .trace-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--amber-bg);
+    border: 1px solid var(--amber-border);
+    border-radius: 100px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: var(--amber);
+    animation: fadeUp 0.3s ease both;
+  }
+
+  /* Safe banner */
+  .safe-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--green-bg);
+    border: 1px solid var(--green-border);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+
+  .safe-icon {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: rgba(0,217,122,0.15);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    color: var(--green);
+  }
+
+  .safe-title { font-size: 15px; font-weight: 500; color: var(--green); }
+  .safe-sub { font-size: 12px; color: rgba(0,217,122,0.6); margin-top: 2px; }
+
+  /* Not found */
+  .not-found {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+  }
+
+  .not-found svg { opacity: 0.3; margin-bottom: 14px; }
+  .not-found h3 { font-size: 16px; font-weight: 500; margin-bottom: 6px; color: var(--text); }
+  .not-found p { font-size: 13px; line-height: 1.6; }
+
+  /* Footer note */
+  .footnote {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: center;
+    margin-top: 20px;
+    line-height: 1.6;
+  }
+
+  /* Scan again */
+  .rescan-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.2s, transform 0.15s;
+  }
+
+  .rescan-btn:hover { background: var(--surface2); }
+  .rescan-btn:active { transform: scale(0.99); }
+
+  /* ── UTILS ── */
+  .hidden { display: none !important; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <line x1="7" y1="8" x2="7" y2="16"/>
+          <line x1="10" y1="8" x2="10" y2="16"/>
+          <line x1="14" y1="8" x2="14" y2="16"/>
+          <line x1="17" y1="8" x2="17" y2="16"/>
+          <line x1="3" y1="12" x2="21" y2="12" stroke-dasharray="2 18"/>
+        </svg>
+      </div>
+      <span class="logo-name">Aller<span>Scan</span></span>
+    </div>
+    <p class="tagline">Instant allergen detection from any product barcode</p>
+  </header>
+
+  <div class="divider"></div>
+
+  <!-- HOME -->
+  <div id="screen-home">
+
+    <div id="notice-area"></div>
+
+    <button class="scan-btn" id="btn-camera" onclick="startCamera()">
+      <div class="pulse-dot"></div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+      Open camera &amp; scan
+    </button>
+
+    <div class="manual-card">
+      <label>Or enter barcode manually</label>
+      <div class="input-row">
+        <input type="text" id="barcode-input" placeholder="e.g. 3017620422003"
+          inputmode="numeric" maxlength="18"
+          onkeydown="if(event.key==='Enter') manualLookup()"
+          oninput="document.getElementById('go-btn').disabled=this.value.length<6">
+        <button class="go-btn" id="go-btn" disabled onclick="manualLookup()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </button>
+      </div>
+      <p class="hint">
+        Try:
+        <a onclick="quickLook('3017620422003')">3017620422003</a> (Nutella) ·
+        <a onclick="quickLook('0038000138416')">0038000138416</a> (Rice Krispies)
+      </p>
+    </div>
+  </div>
+
+  <!-- SCANNER -->
+  <div id="screen-scan" class="hidden">
+    <div class="viewfinder">
+      <video id="video" playsinline muted autoplay></video>
+      <div class="vf-frame">
+        <div class="bracket tl"></div>
+        <div class="bracket tr"></div>
+        <div class="bracket bl"></div>
+        <div class="bracket br"></div>
+        <div class="scan-line"></div>
+      </div>
+      <div class="vf-label">Point camera at a barcode</div>
+    </div>
+    <button class="cancel-btn" onclick="cancelScan()">✕ &nbsp;Cancel</button>
+  </div>
+
+  <!-- LOADING -->
+  <div id="screen-loading" class="hidden">
+    <div class="spinner"></div>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:6px;">Looking up product…</p>
+    <p id="loading-barcode"></p>
+  </div>
+
+  <!-- RESULT -->
+  <div id="screen-result" class="hidden">
+
+    <div id="product-hero" class="product-hero">
+      <!-- filled by JS -->
+    </div>
+
+    <div id="allergen-section"></div>
+
+    <p class="footnote">
+      Data sourced from Open Food Facts contributors.<br>
+      Always verify allergens on the physical product label.
+    </p>
+
+    <button class="rescan-btn" onclick="resetApp()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="14" rx="2"/>
+        <line x1="7" y1="8" x2="7" y2="16"/>
+        <line x1="10" y1="8" x2="10" y2="16"/>
+        <line x1="14" y1="8" x2="14" y2="16"/>
+        <line x1="17" y1="8" x2="17" y2="16"/>
+      </svg>
+      Scan another product
+    </button>
+  </div>
+
+</div>
+
+<script>
+const ALLERGEN_ICONS = {
+  gluten:'🌾', wheat:'🌾', rye:'🌾', barley:'🌾',
+  milk:'🥛', dairy:'🥛', lactose:'🥛',
+  eggs:'🥚', egg:'🥚',
+  nuts:'🥜', peanut:'🥜', peanuts:'🥜',
+  'tree nuts':'🌰', almond:'🌰', cashew:'🌰', walnut:'🌰', hazelnut:'🌰',
+  soy:'🫘', soybeans:'🫘', soya:'🫘',
+  fish:'🐟', salmon:'🐟', tuna:'🐟',
+  shellfish:'🦐', shrimp:'🦐', prawn:'🦐',
+  crustaceans:'🦀', crab:'🦀', lobster:'🦀',
+  molluscs:'🦑', clam:'🦑',
+  sesame:'🌿', celery:'🌿', mustard:'🌿', lupin:'🌿',
+  sulphur:'⚗️', sulphites:'⚗️', sulfites:'⚗️',
+};
+
+function getIcon(name) {
+  const l = name.toLowerCase();
+  for (const [k, v] of Object.entries(ALLERGEN_ICONS)) {
+    if (l.includes(k)) return v;
+  }
+  return '⚠️';
+}
+
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function show(id) {
+  ['screen-home','screen-scan','screen-loading','screen-result'].forEach(s => {
+    document.getElementById(s).classList.add('hidden');
+  });
+  document.getElementById(id).classList.remove('hidden');
+}
+
+// ── CAMERA ──────────────────────────────────────
+let stream = null, detector = null, raf = null, lastCode = null;
+
+async function startCamera() {
+  clearNotice();
+  if (!('BarcodeDetector' in window)) {
+    showNotice('warn', 'Camera scanning requires Chrome or Edge on Android/desktop. Use manual entry below.');
+    return;
+  }
+  show('screen-scan');
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    const video = document.getElementById('video');
+    video.srcObject = stream;
+    await video.play();
+    detector = new BarcodeDetector({
+      formats: ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','qr_code']
+    });
+    detectLoop(video);
+  } catch(e) {
+    stopCamera();
+    show('screen-home');
+    showNotice('err', e.name === 'NotAllowedError'
+      ? 'Camera permission denied. Please allow access in your browser settings.'
+      : 'Could not start camera. Try manual entry instead.');
+  }
+}
+
+function detectLoop(video) {
+  raf = requestAnimationFrame(async () => {
+    if (!stream) return;
+    if (video.readyState >= 2) {
+      try {
+        const codes = await detector.detect(video);
+        if (codes.length && codes[0].rawValue !== lastCode) {
+          lastCode = codes[0].rawValue;
+          stopCamera();
+          lookupProduct(codes[0].rawValue);
+          return;
+        }
+      } catch {}
+    }
+    detectLoop(video);
+  });
+}
+
+function stopCamera() {
+  if (raf) { cancelAnimationFrame(raf); raf = null; }
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+}
+
+function cancelScan() { stopCamera(); show('screen-home'); }
+
+// ── LOOKUP ──────────────────────────────────────
+async function lookupProduct(code) {
+  show('screen-loading');
+  document.getElementById('loading-barcode').textContent = code;
+  try {
+    const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+    const data = await res.json();
+    renderResult(data.status === 1 ? data.product : null, code);
+  } catch {
+    renderResult(null, code, true);
+  }
+}
+
+function manualLookup() {
+  const v = document.getElementById('barcode-input').value.trim();
+  if (v.length >= 6) lookupProduct(v);
+}
+
+function quickLook(code) {
+  document.getElementById('barcode-input').value = code;
+  document.getElementById('go-btn').disabled = false;
+  lookupProduct(code);
+}
+
+// ── RENDER ──────────────────────────────────────
+function renderResult(product, code, networkErr) {
+  show('screen-result');
+
+  // Product hero
+  const hero = document.getElementById('product-hero');
+  if (product) {
+    const name = product.product_name || product.product_name_en || 'Unknown product';
+    const brand = product.brands || '';
+    const img = product.image_front_small_url || product.image_small_url || '';
+    hero.innerHTML = `
+      ${img
+        ? `<img class="product-img" src="${img}" alt="${name}">`
+        : `<div class="product-img-placeholder">
+             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M3 17l4-4 4 4 4-5 4 5"/></svg>
+           </div>`}
+      <div class="product-info">
+        <p class="product-name">${esc(name)}</p>
+        ${brand ? `<p class="product-brand">${esc(brand)}</p>` : ''}
+        <span class="barcode-tag">${esc(code)}</span>
+      </div>`;
+  } else {
+    hero.innerHTML = `
+      <div class="product-img-placeholder">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div class="product-info">
+        <p class="product-name">${networkErr ? 'Network error' : 'Product not found'}</p>
+        <span class="barcode-tag">${esc(code)}</span>
+      </div>`;
+  }
+
+  // Allergen section
+  const sec = document.getElementById('allergen-section');
+  if (!product) {
+    sec.innerHTML = `<div class="not-found">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.2">
+        <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <h3>${networkErr ? 'Connection failed' : 'No data available'}</h3>
+      <p>${networkErr ? 'Check your internet connection and try again.' : 'This product isn\'t in the Open Food Facts database. Check the physical label.'}</p>
+    </div>`;
+    return;
+  }
+
+  const allergens = (product.allergens_tags || [])
+    .map(a => cap(a.replace(/^[a-z]{2}:/, '').replace(/-/g, ' '))).filter(Boolean);
+  const traces = (product.traces_tags || [])
+    .map(t => cap(t.replace(/^[a-z]{2}:/, '').replace(/-/g, ' '))).filter(Boolean);
+
+  if (allergens.length === 0 && traces.length === 0) {
+    sec.innerHTML = `<div class="safe-banner">
+      <div class="safe-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      </div>
+      <div>
+        <p class="safe-title">No allergens listed</p>
+        <p class="safe-sub">Always confirm with the physical product label.</p>
+      </div>
+    </div>`;
+    return;
+  }
+
+  let html = '';
+
+  if (allergens.length) {
+    html += `<p class="section-label">Contains allergens (${allergens.length})</p>`;
+    allergens.forEach(a => {
+      html += `<div class="allergen-row">
+        <span class="allergen-emoji">${getIcon(a)}</span>
+        <span class="allergen-name">${esc(a)}</span>
+      </div>`;
+    });
+  }
+
+  if (traces.length) {
+    html += `<p class="section-label" style="margin-top:${allergens.length ? 20 : 0}px">May contain traces of</p>
+    <div class="traces-wrap">`;
+    traces.forEach(t => {
+      html += `<div class="trace-chip"><span>${getIcon(t)}</span><span>${esc(t)}</span></div>`;
+    });
+    html += `</div>`;
+  }
+
+  sec.innerHTML = html;
+}
+
+function resetApp() {
+  lastCode = null;
+  document.getElementById('barcode-input').value = '';
+  document.getElementById('go-btn').disabled = true;
+  clearNotice();
+  show('screen-home');
+}
+
+function showNotice(type, msg) {
+  document.getElementById('notice-area').innerHTML =
+    `<div class="notice ${type}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      ${msg}
+    </div>`;
+}
+
+function clearNotice() {
+  document.getElementById('notice-area').innerHTML = '';
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
