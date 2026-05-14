@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AllergenTrack - Home</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #07090f;
+      --surface: #0d1220;
+      --text: #e8eeff;
+      --text-muted: #6a7a9a;
+      --green: #00d97a;
+      --red: #ff3b52;
+      --border: rgba(255,255,255,0.07);
+    }
+
+    html, body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(77,126,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(77,126,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page { position: relative; z-index: 1; width: 100%; max-width: 520px; padding: 60px 20px; }
+
+    header {
+      padding: 40px 0 32px;
+      text-align: center;
+    }
+
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+
+    .logo span { color: var(--red); }
+
+    .tagline {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 40px;
+    }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, var(--red) 0%, transparent 60%);
+      margin-bottom: 40px;
+      opacity: 0.4;
+    }
+
+    .cards {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .card {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      transition: all 0.3s;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .card:hover {
+      border-color: rgba(255,255,255,0.15);
+      transform: translateY(-2px);
+    }
+
+    .card-icon {
+      font-size: 32px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background: var(--green);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+      font-size: 14px;
+    }
+
+    .btn:hover { opacity: 0.85; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card { animation: fadeUp 0.5s ease both; }
+    .card:nth-child(2) { animation-delay: 0.1s; }
+  </style>
+</head>
+<body>
+
+<div class="page">
+  <header>
+    <div class="logo">Allergen<span>Track</span></div>
+    <p class="tagline">Your personal allergen & task management suite</p>
+  </header>
+
+  <div class="divider"></div>
+
+  <div class="cards">
+    <a href="remixed-31e279f3.html" class="card">
+      <div class="card-icon">📱</div>
+      <div class="card-title">AllerScan</div>
+      <div class="card-desc">Scan product barcodes and instantly detect allergens from our database</div>
+      <button class="btn">Open Scanner →</button>
+    </a>
+
+    <a href="todo.html" class="card">
+      <div class="card-icon">✓</div>
+      <div class="card-title">TaskFlow</div>
+      <div class="card-desc">Manage your to-do list with priority levels and local storage</div>
+      <button class="btn">Open Tasks →</button>
+    </a>
+  </div>
+</div>
+
+</body>
+</html>
